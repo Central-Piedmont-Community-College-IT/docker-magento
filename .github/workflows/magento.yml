@@ -1,0 +1,40 @@
+name: Magento Tests
+on:
+  pull_request:
+  push: { branches: main }
+
+jobs:
+  test:
+    name: Run test suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start docker images
+        run: ./Sites/m2.4.7/bin/start
+
+      - name: Set Configurations
+        run: |
+          ./Sites/m2.4.7/bin/magento config:set general/locale/timezone America/New_York
+          ./Sites/m2.4.7/bin/magento config:set admin/security/admin_account_sharing 1
+          ./Sites/m2.4.7/bin/magento config:set admin/security/use_form_key 0
+          ./Sites/m2.4.7/bin/magento config:set cms/wysiwyg/enabled disabled
+
+      - name: Build MFTF Project
+        run:  ./Sites/m2.4.7/bin/mftf build:project
+
+      - name: Setup Env
+        run: ./Sites/m2.4.7/bin/mftf setup:env
+
+      - name: Generate Test
+        run: ./Sites/m2.4.7/bin/mftf generate:tests
+
+      - name: Start Selenium Server
+        run: |
+          curl -O http://selenium-release.storage.googleapis.com/3.14/selenium-server-standalone-3.14.0.jar
+          java -Dwebdriver.chrome.driver=chromedriver -jar selenium-server-standalone-3.14.0.jar
+
+      - name: Run MFTF Admin Login Tests
+        run: ./Sites/m2.4.7/bin/mftf  run:test AdminLoginSuccessfulTest --remove --force

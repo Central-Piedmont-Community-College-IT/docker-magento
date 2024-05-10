@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024. Christopher Queen Consulting LLC (http://www.ChristopherQueenConsulting.com/)
+#
+
+set -o errexit
+
+DOMAIN=${1:-magento.test}
+VERSION=${2:-2.4.7}
+EDITION=${3:-community}
+FOLDER=${4:-Sites/m"$VERSION"}
+
+# See if the Sites and m2 folder exist
+if [ -d "$FOLDER" ]; then
+   echo "$FOLDER already exists"
+else
+  echo "Creating folder $FOLDER"
+  mkdir -p "$FOLDER"
+fi
+
+if [ -d "$FOLDER/bin" ]; then
+  echo "Error: The current directory is not empty. Please remove all contents within this directory and try again."
+  exit 1
+fi
+
+# Change directory to the folder and Run the online setup script
+cd "$FOLDER" && curl -s https://raw.githubusercontent.com/Central-Piedmont-Community-College-IT/docker-magento/main/lib/onelinesetup | bash -s -- $DOMAIN $VERSION $EDITION
+
+# Install Sample Data
+#bin/magento sampledata:deploy
+#bin/magento setup:upgrade
+
+# Open the browser to see live site
+open "https://$DOMAIN"
